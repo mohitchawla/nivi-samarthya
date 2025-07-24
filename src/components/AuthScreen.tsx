@@ -27,6 +27,24 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
 
   const handleIncomeSubmit = () => {
     onAuth(phone, income);
+    fetch('http://localhost:9090/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ phoneNumber: phone, income: income })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        sessionStorage.setItem('userno', phone);
+        return response.json();
+      })
+      .then(data => {
+        console.log('Success:', data);
+        // Handle successful response
+      });
   };
 
   const renderPhoneStep = () => (
@@ -55,8 +73,8 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
             />
           </div>
         </div>
-        <Button 
-          onClick={handlePhoneSubmit} 
+        <Button
+          onClick={handlePhoneSubmit}
           disabled={phone.length !== 10}
           className="w-full"
           size="lg"
@@ -88,16 +106,16 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
             className="text-center text-lg tracking-widest"
           />
         </div>
-        <Button 
-          onClick={handleOtpSubmit} 
+        <Button
+          onClick={handleOtpSubmit}
           disabled={otp.length !== 6}
           className="w-full"
           size="lg"
         >
           वेरिफाई करें <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => setStep('phone')}
           className="w-full"
         >
@@ -131,8 +149,8 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
             </Button>
           ))}
         </div>
-        <Button 
-          onClick={handleIncomeSubmit} 
+        <Button
+          onClick={handleIncomeSubmit}
           disabled={!income}
           className="w-full"
           size="lg"

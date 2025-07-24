@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddExpenseModal } from "./AddExpenseModal";
-import { 
-  Wallet, 
-  TrendingUp, 
-  TrendingDown, 
-  PiggyBank, 
-  Mic, 
+import {
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+  PiggyBank,
+  Mic,
   Star,
   MessageCircle,
   Plus,
@@ -32,59 +32,76 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
   const [showBalance, setShowBalance] = useState(true);
   const [timeFilter, setTimeFilter] = useState('monthly');
   const [showAddExpense, setShowAddExpense] = useState(false);
-  
+  const [baseData, setBaseData] = useState({
+    totalIncome: 0,
+    totalExpenses: 0,
+    savings: 0,
+    categories: []
+  });
+
   // Sample data - in real app this would come from backend
   const getFinancialData = () => {
-    const baseData = {
-      totalIncome: 18000,
-      totalExpenses: 14500,
-      savings: 3500,
-      previousMonthExpenses: 16200, // For rating calculation
-      categories: [
-        { name: 'Rent', amount: 6000, color: 'bg-destructive', percentage: 41 },
-        { name: 'Groceries', amount: 3500, color: 'bg-warning', percentage: 24 },
-        { name: 'Bills', amount: 2000, color: 'bg-primary', percentage: 14 },
-        { name: 'Medical', amount: 1000, color: 'bg-success', percentage: 7 },
-        { name: 'Transport', amount: 1500, color: 'bg-secondary', percentage: 10 },
-        { name: 'Miscellaneous', amount: 500, color: 'bg-accent', percentage: 4 },
-      ]
-    };
 
-    // Adjust data based on time filter
-    if (timeFilter === 'daily') {
-      return {
-        ...baseData,
-        totalIncome: Math.round(baseData.totalIncome / 30),
-        totalExpenses: Math.round(baseData.totalExpenses / 30),
-        savings: Math.round(baseData.savings / 30),
-        categories: baseData.categories.map(cat => ({
-          ...cat,
-          amount: Math.round(cat.amount / 30)
-        }))
-      };
-    } else if (timeFilter === 'weekly') {
-      return {
-        ...baseData,
-        totalIncome: Math.round(baseData.totalIncome / 4),
-        totalExpenses: Math.round(baseData.totalExpenses / 4),
-        savings: Math.round(baseData.savings / 4),
-        categories: baseData.categories.map(cat => ({
-          ...cat,
-          amount: Math.round(cat.amount / 4)
-        }))
-      };
-    }
-    return baseData;
+    fetch('http://localhost:9090/expense/' + sessionStorage.getItem("userno"), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        response.json().then(data => {
+          if (timeFilter === 'daily') {
+            setBaseData(
+              {
+                totalIncome: data.totalIncome,
+                totalExpenses: data.totalExpenses,
+                savings: data.savings,
+                categories: data.expenseResponses.map(cat => ({
+                  ...cat,
+                  amount: Math.round(cat.amount / 30)
+                }))
+              }
+            )
+          } else if (timeFilter === 'weekly') {
+            setBaseData(
+              {
+                totalIncome: data.totalIncome,
+                totalExpenses: data.totalExpenses,
+                savings: data.savings,
+                categories: data.expenseResponses.map(cat => ({
+                  ...cat,
+                  amount: Math.round(cat.amount / 4)
+                }))
+              }
+            )
+          } else if (timeFilter === 'monthly') {
+            setBaseData(
+              {
+                totalIncome: data.totalIncome,
+                totalExpenses: data.totalExpenses,
+                savings: data.savings,
+                categories: data.expenseResponses.map(cat => ({
+                  ...cat,
+                  amount: Math.round(cat.amount / 1)
+                }))
+              }
+            )
+          }
+        });
+      })
   };
 
-  const financialData = getFinancialData();
-  
+  getFinancialData();
+
   // Calculate user rating based on expense reduction
   const calculateRating = () => {
-    const currentExpenses = financialData.totalExpenses * (timeFilter === 'daily' ? 30 : timeFilter === 'weekly' ? 4 : 1);
+    const currentExpenses = baseData.totalExpenses * (timeFilter === 'daily' ? 30 : timeFilter === 'weekly' ? 4 : 1);
     const previousExpenses = 16200; // Previous month data
     const improvement = ((previousExpenses - currentExpenses) / previousExpenses) * 100;
-    
+
     if (improvement >= 15) return 5;
     if (improvement >= 10) return 4;
     if (improvement >= 5) return 3;
@@ -93,7 +110,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
   };
 
   const rating = calculateRating();
-  
+
   const getRatingText = () => {
     const improvements = {
       5: { hi: "बेहतरीन! आप बचत के चैंपियन हैं! 🏆", en: "Excellent! You're a savings champion! 🏆" },
@@ -127,7 +144,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
   const getCategoryText = (category: string) => {
     const categoryMap: Record<string, string> = {
       'Rent': 'किराया',
-      'Groceries': 'किराना', 
+      'Groceries': 'किराना',
       'Bills': 'बिल',
       'Medical': 'चिकित्सा',
       'Transport': 'यातायात',
@@ -167,8 +184,8 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
               ))}
             </SelectContent>
           </Select>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={() => setShowBalance(!showBalance)}
           >
@@ -184,9 +201,9 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`w-5 h-5 ${i < rating ? 'fill-warning text-warning' : 'text-muted'}`} 
+                  <Star
+                    key={i}
+                    className={`w-5 h-5 ${i < rating ? 'fill-warning text-warning' : 'text-muted'}`}
                   />
                 ))}
               </div>
@@ -225,7 +242,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {formatAmount(financialData.totalIncome)}
+              {formatAmount(baseData.totalIncome)}
             </div>
             <p className="text-xs text-muted-foreground">
               {getText('इस महीने', 'This month')}
@@ -242,7 +259,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {formatAmount(financialData.totalExpenses)}
+              {formatAmount(baseData.totalExpenses)}
             </div>
             <p className="text-xs text-muted-foreground">
               {getText('इस महीने', 'This month')}
@@ -259,7 +276,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {formatAmount(financialData.savings)}
+              {formatAmount(baseData.savings)}
             </div>
             <p className="text-xs text-muted-foreground">
               {getText('उपलब्ध राशि', 'Available amount')}
@@ -277,7 +294,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {financialData.categories.map((category, index) => (
+          {baseData.categories.map((category, index) => (
             <div key={index} className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{getCategoryText(category.name)}</span>
@@ -291,8 +308,8 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
-        <Button 
-          variant="voice" 
+        <Button
+          variant="voice"
           size="voice"
           onClick={onVoiceInput}
           className="h-20 flex-col gap-2"
@@ -303,8 +320,8 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
           </span>
         </Button>
 
-        <Button 
-          variant="secondary" 
+        <Button
+          variant="secondary"
           onClick={onChatbot}
           className="h-20 flex-col gap-2"
         >
@@ -316,8 +333,8 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
       </div>
 
       {/* AI Recommendations Button */}
-      <Button 
-        variant="success" 
+      <Button
+        variant="success"
         onClick={onRecommendations}
         className="w-full"
         size="lg"
@@ -327,8 +344,8 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
       </Button>
 
       {/* Quick Add Button */}
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="w-full"
         size="lg"
         onClick={() => setShowAddExpense(true)}

@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  ArrowLeft, 
+import {
+  Mic,
+  MicOff,
+  Volume2,
+  ArrowLeft,
   Check,
   RefreshCw,
   Edit
@@ -38,23 +38,23 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
 
   const startListening = () => {
     setIsListening(true);
-    
+
     // Check if browser supports speech recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       const recognition = new SpeechRecognition();
-      
+
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-      
+
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setTranscriptText(transcript);
         setIsListening(false);
         parseExpense(transcript);
       };
-      
+
       recognition.onerror = () => {
         setIsListening(false);
         // Fallback to sample data on error
@@ -68,14 +68,14 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
         setTranscriptText(randomText);
         parseExpense(randomText);
       };
-      
+
       recognition.start();
     } else {
       // Fallback for browsers without speech recognition
       setTimeout(() => {
         const sampleTexts = [
           "आज 200 रुपये किराना में खर्च किया",
-          "Today spent 150 rupees on groceries", 
+          "Today spent 150 rupees on groceries",
           "300 rupees medical expense",
           "Paid 500 for transport"
         ];
@@ -92,11 +92,11 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
     // Enhanced AI parsing logic
     setTimeout(() => {
       const amount = text.match(/\d+/)?.[0] || "0";
-      
+
       // Smart category detection based on keywords
       let detectedCategory = 'Miscellaneous';
       const lowerText = text.toLowerCase();
-      
+
       if (lowerText.includes('किराना') || lowerText.includes('groceries') || lowerText.includes('सब्जी') || lowerText.includes('vegetable')) {
         detectedCategory = 'Groceries';
       } else if (lowerText.includes('किराया') || lowerText.includes('rent')) {
@@ -108,14 +108,29 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
       } else if (lowerText.includes('transport') || lowerText.includes('यातायात') || lowerText.includes('bus') || lowerText.includes('taxi') || lowerText.includes('auto')) {
         detectedCategory = 'Transport';
       }
-      
+
       const expense = {
         amount: parseInt(amount),
         category: detectedCategory,
         description: text,
-        date: new Date().toLocaleDateString('en-IN')
+        date: new Date().toLocaleDateString('en-IN'),
+        phoneNumber: sessionStorage.getItem("userno")
       };
-      
+
+      fetch('http://localhost:9090/expense', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expense)
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+
       setParsedExpense(expense);
       setEditAmount(amount);
       setEditCategory(detectedCategory);
@@ -131,7 +146,7 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
       description: editDescription,
       date: new Date().toLocaleDateString('en-IN')
     } : parsedExpense;
-    
+
     if (expenseToAdd) {
       onExpenseAdded(expenseToAdd);
       // Reset state
@@ -262,18 +277,18 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                     {getText('संपादित करें', 'Edit')}
                   </Button>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <Label>{getText('राशि', 'Amount')}:</Label>
                     <span className="font-medium">₹{parsedExpense.amount}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <Label>{getText('श्रेणी', 'Category')}:</Label>
                     <span className="font-medium">{getCategoryText(parsedExpense.category)}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <Label>{getText('दिनांक', 'Date')}:</Label>
                     <span className="font-medium">{parsedExpense.date}</span>
@@ -281,17 +296,17 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="success" 
+                  <Button
+                    variant="success"
                     onClick={confirmExpense}
                     className="flex-1"
                   >
                     <Check className="w-4 h-4 mr-2" />
                     {getText('पुष्टि करें', 'Confirm')}
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     onClick={retryListening}
                     className="flex-1"
                   >
@@ -310,7 +325,7 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                 <h3 className="font-semibold text-warning">
                   {getText('खर्च संपादित करें', 'Edit Expense')}
                 </h3>
-                
+
                 <div className="space-y-3">
                   <div>
                     <Label>{getText('राशि', 'Amount')} (₹)</Label>
@@ -321,7 +336,7 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                       placeholder={getText('राशि दर्ज करें', 'Enter amount')}
                     />
                   </div>
-                  
+
                   <div>
                     <Label>{getText('श्रेणी', 'Category')}</Label>
                     <Select value={editCategory} onValueChange={setEditCategory}>
@@ -337,7 +352,7 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
                     <Label>{getText('विवरण', 'Description')}</Label>
                     <Input
@@ -349,8 +364,8 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button 
-                    variant="success" 
+                  <Button
+                    variant="success"
                     onClick={confirmExpense}
                     className="flex-1"
                     disabled={!editAmount || !editCategory}
@@ -358,9 +373,9 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                     <Check className="w-4 h-4 mr-2" />
                     {getText('सेव करें', 'Save')}
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     onClick={() => setIsEditing(false)}
                     className="flex-1"
                   >

@@ -42,16 +42,31 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
 
   const handleSubmit = () => {
     if (!amount || !category) return;
-    
+
     const expense = {
       amount: parseInt(amount),
       category,
       description: description || category,
-      date: format(date, 'dd/MM/yyyy')
+      date: format(date, 'dd/MM/yyyy'),
+      phoneNumber: sessionStorage.getItem('userno')
     };
-    
+
     onExpenseAdded(expense);
-    
+
+    fetch('http://localhost:9090/expense', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(expense)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+
     // Reset form
     setAmount("");
     setCategory("");
@@ -69,7 +84,7 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
             {getText('नया खर्च जोड़ें', 'Add New Expense')}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="amount">{getText('राशि', 'Amount')} (₹)</Label>
@@ -81,7 +96,7 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
               onChange={(e) => setAmount(e.target.value)}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label>{getText('श्रेणी', 'Category')}</Label>
             <Select value={category} onValueChange={setCategory}>
@@ -97,7 +112,7 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label>{getText('दिनांक', 'Date')}</Label>
             <Popover>
@@ -117,7 +132,7 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
               </PopoverContent>
             </Popover>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">{getText('विवरण', 'Description')} ({getText('वैकल्पिक', 'Optional')})</Label>
             <Input
@@ -127,13 +142,13 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-2 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
               {getText('रद्द करें', 'Cancel')}
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               className="flex-1"
               disabled={!amount || !category}
             >
