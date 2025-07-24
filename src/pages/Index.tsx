@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { LanguageSelector } from "@/components/LanguageSelector";
 import { AuthScreen } from "@/components/AuthScreen";
+import { SMSPermissionScreen } from "@/components/SMSPermissionScreen";
 import { Dashboard } from "@/components/Dashboard";
 import { VoiceInput } from "@/components/VoiceInput";
 import { Recommendations } from "@/components/Recommendations";
@@ -13,8 +13,8 @@ import { toast } from "@/hooks/use-toast";
 
 type AppState = 
   | 'welcome'
-  | 'language-select' 
   | 'auth' 
+  | 'sms-permission'
   | 'dashboard' 
   | 'voice-input' 
   | 'recommendations' 
@@ -22,18 +22,17 @@ type AppState =
 
 const Index = () => {
   const [currentState, setCurrentState] = useState<AppState>('welcome');
-  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('hi'); // Default to Hindi
   const [userPhone, setUserPhone] = useState('');
-  const [userIncome, setUserIncome] = useState('');
-
-  const handleLanguageSelect = (language: string) => {
-    setSelectedLanguage(language);
-    setCurrentState('auth');
-  };
+  const [smsPermissionGranted, setSmsPermissionGranted] = useState(false);
 
   const handleAuth = (phone: string, income: string) => {
     setUserPhone(phone);
-    setUserIncome(income);
+    setCurrentState('sms-permission');
+  };
+
+  const handleSMSPermission = (granted: boolean) => {
+    setSmsPermissionGranted(granted);
     setCurrentState('dashboard');
     toast({
       title: selectedLanguage === 'hi' ? "स्वागत है!" : "Welcome!",
@@ -99,7 +98,7 @@ const Index = () => {
         </Card>
 
         <Button 
-          onClick={() => setCurrentState('language-select')}
+          onClick={() => setCurrentState('auth')}
           size="lg" 
           className="w-full bg-white text-primary hover:bg-white/90 shadow-lg"
         >
@@ -114,24 +113,26 @@ const Index = () => {
     case 'welcome':
       return renderWelcomeScreen();
     
-    case 'language-select':
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-secondary-light flex items-center justify-center p-4">
-          <LanguageSelector onLanguageSelect={handleLanguageSelect} />
-        </div>
-      );
-    
     case 'auth':
       return <AuthScreen onAuth={handleAuth} />;
+      
+    case 'sms-permission':
+      return (
+        <SMSPermissionScreen 
+          onAllow={() => handleSMSPermission(true)}
+          onDeny={() => handleSMSPermission(false)}
+        />
+      );
     
     case 'dashboard':
       return (
         <Dashboard 
           language={selectedLanguage} 
-          userIncome={userIncome}
           onVoiceInput={() => setCurrentState('voice-input')}
           onChatbot={() => setCurrentState('chatbot')}
           onRecommendations={() => setCurrentState('recommendations')}
+          onLanguageChange={setSelectedLanguage}
+          onExpenseAdded={handleExpenseAdded}
         />
       );
     
@@ -148,7 +149,7 @@ const Index = () => {
       return (
         <Recommendations 
           language={selectedLanguage}
-          userIncome={userIncome}
+          userIncome="15000" // Default income for recommendations
           onBack={() => setCurrentState('dashboard')}
         />
       );

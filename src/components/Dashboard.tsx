@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AddExpenseModal } from "./AddExpenseModal";
 import { 
   Wallet, 
   TrendingUp, 
@@ -12,33 +14,107 @@ import {
   MessageCircle,
   Plus,
   Eye,
-  EyeOff
+  EyeOff,
+  Globe,
+  Calendar
 } from "lucide-react";
 
 interface DashboardProps {
   language: string;
-  userIncome: string;
   onVoiceInput: () => void;
   onChatbot: () => void;
   onRecommendations: () => void;
+  onLanguageChange: (language: string) => void;
+  onExpenseAdded: (expense: any) => void;
 }
 
-export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRecommendations }: DashboardProps) => {
+export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations, onLanguageChange, onExpenseAdded }: DashboardProps) => {
   const [showBalance, setShowBalance] = useState(true);
+  const [timeFilter, setTimeFilter] = useState('monthly');
+  const [showAddExpense, setShowAddExpense] = useState(false);
   
   // Sample data - in real app this would come from backend
-  const financialData = {
-    totalIncome: 18000,
-    totalExpenses: 14500,
-    savings: 3500,
-    rating: 4,
-    categories: [
-      { name: 'Essentials', amount: 8000, color: 'bg-destructive', percentage: 55 },
-      { name: 'Bills', amount: 3500, color: 'bg-warning', percentage: 24 },
-      { name: 'Discretionary', amount: 2000, color: 'bg-primary', percentage: 14 },
-      { name: 'Miscellaneous', amount: 1000, color: 'bg-secondary', percentage: 7 },
-    ]
+  const getFinancialData = () => {
+    const baseData = {
+      totalIncome: 18000,
+      totalExpenses: 14500,
+      savings: 3500,
+      previousMonthExpenses: 16200, // For rating calculation
+      categories: [
+        { name: 'Rent', amount: 6000, color: 'bg-destructive', percentage: 41 },
+        { name: 'Groceries', amount: 3500, color: 'bg-warning', percentage: 24 },
+        { name: 'Bills', amount: 2000, color: 'bg-primary', percentage: 14 },
+        { name: 'Medical', amount: 1000, color: 'bg-success', percentage: 7 },
+        { name: 'Transport', amount: 1500, color: 'bg-secondary', percentage: 10 },
+        { name: 'Miscellaneous', amount: 500, color: 'bg-accent', percentage: 4 },
+      ]
+    };
+
+    // Adjust data based on time filter
+    if (timeFilter === 'daily') {
+      return {
+        ...baseData,
+        totalIncome: Math.round(baseData.totalIncome / 30),
+        totalExpenses: Math.round(baseData.totalExpenses / 30),
+        savings: Math.round(baseData.savings / 30),
+        categories: baseData.categories.map(cat => ({
+          ...cat,
+          amount: Math.round(cat.amount / 30)
+        }))
+      };
+    } else if (timeFilter === 'weekly') {
+      return {
+        ...baseData,
+        totalIncome: Math.round(baseData.totalIncome / 4),
+        totalExpenses: Math.round(baseData.totalExpenses / 4),
+        savings: Math.round(baseData.savings / 4),
+        categories: baseData.categories.map(cat => ({
+          ...cat,
+          amount: Math.round(cat.amount / 4)
+        }))
+      };
+    }
+    return baseData;
   };
+
+  const financialData = getFinancialData();
+  
+  // Calculate user rating based on expense reduction
+  const calculateRating = () => {
+    const currentExpenses = financialData.totalExpenses * (timeFilter === 'daily' ? 30 : timeFilter === 'weekly' ? 4 : 1);
+    const previousExpenses = 16200; // Previous month data
+    const improvement = ((previousExpenses - currentExpenses) / previousExpenses) * 100;
+    
+    if (improvement >= 15) return 5;
+    if (improvement >= 10) return 4;
+    if (improvement >= 5) return 3;
+    if (improvement >= 0) return 2;
+    return 1;
+  };
+
+  const rating = calculateRating();
+  
+  const getRatingText = () => {
+    const improvements = {
+      5: { hi: "बेहतरीन! आप बचत के चैंपियन हैं! 🏆", en: "Excellent! You're a savings champion! 🏆" },
+      4: { hi: "बहुत अच्छा! आप सही दिशा में हैं! 🌟", en: "Great job! You're on the right track! 🌟" },
+      3: { hi: "अच्छा प्रदर्शन! और भी बेहतर कर सकते हैं! 💪", en: "Good work! You can do even better! 💪" },
+      2: { hi: "शुरुआत अच्छी है! कुछ और मेहनत करें! 📈", en: "Good start! Try a bit harder! 📈" },
+      1: { hi: "चिंता न करें! छोटे कदम उठाएं! 🎯", en: "Don't worry! Take small steps! 🎯" }
+    };
+    return language === 'hi' ? improvements[rating as keyof typeof improvements].hi : improvements[rating as keyof typeof improvements].en;
+  };
+
+  const languages = [
+    { code: 'hi', name: 'हिंदी' },
+    { code: 'en', name: 'English' },
+    { code: 'mr', name: 'मराठी' },
+    { code: 'te', name: 'తెలుగు' },
+    { code: 'ta', name: 'தமிழ்' },
+    { code: 'pa', name: 'ਪੰਜਾਬੀ' },
+    { code: 'bn', name: 'বাংলা' },
+    { code: 'gu', name: 'ગુજરાતી' },
+  ];
 
   const getText = (hindi: string, english: string) => {
     return language === 'hi' ? hindi : english;
@@ -48,11 +124,28 @@ export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRec
     return showBalance ? `₹${amount.toLocaleString('en-IN')}` : '••••••';
   };
 
+  const getCategoryText = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'Rent': 'किराया',
+      'Groceries': 'किराना', 
+      'Bills': 'बिल',
+      'Medical': 'चिकित्सा',
+      'Transport': 'यातायात',
+      'Miscellaneous': 'विविध'
+    };
+    return language === 'hi' ? categoryMap[category] || category : category;
+  };
+
+  const handleExpenseAdded = (expense: any) => {
+    onExpenseAdded(expense);
+    setShowAddExpense(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-primary-light/20 p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">
             {getText('नमस्ते! 🙏', 'Hello! 👋')}
           </h1>
@@ -61,6 +154,19 @@ export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRec
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Select value={language} onValueChange={onLanguageChange}>
+            <SelectTrigger className="w-32">
+              <Globe className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {languages.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button 
             variant="ghost" 
             size="icon"
@@ -68,15 +174,44 @@ export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRec
           >
             {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
           </Button>
-          <div className="flex items-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <Star 
-                key={i} 
-                className={`w-4 h-4 ${i < financialData.rating ? 'fill-secondary text-secondary' : 'text-muted'}`} 
-              />
-            ))}
-          </div>
         </div>
+      </div>
+
+      {/* User Rating */}
+      <Card className="shadow-card mb-4">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`w-5 h-5 ${i < rating ? 'fill-warning text-warning' : 'text-muted'}`} 
+                  />
+                ))}
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">{getText('आपकी रेटिंग', 'Your Rating')}</p>
+                <p className="text-sm text-muted-foreground">{getRatingText()}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Time Filter */}
+      <div className="flex items-center gap-2 mb-4">
+        <Calendar className="w-4 h-4 text-muted-foreground" />
+        <Select value={timeFilter} onValueChange={setTimeFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="daily">{getText('दैनिक', 'Daily')}</SelectItem>
+            <SelectItem value="weekly">{getText('साप्ताहिक', 'Weekly')}</SelectItem>
+            <SelectItem value="monthly">{getText('मासिक', 'Monthly')}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Financial Overview Cards */}
@@ -145,12 +280,7 @@ export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRec
           {financialData.categories.map((category, index) => (
             <div key={index} className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{getText(
-                  category.name === 'Essentials' ? 'जरूरी सामान' :
-                  category.name === 'Bills' ? 'बिल' :
-                  category.name === 'Discretionary' ? 'विकल्प' : 'विविध',
-                  category.name
-                )}</span>
+                <span>{getCategoryText(category.name)}</span>
                 <span className="font-medium">{formatAmount(category.amount)}</span>
               </div>
               <Progress value={category.percentage} className="h-2" />
@@ -201,10 +331,19 @@ export const Dashboard = ({ language, userIncome, onVoiceInput, onChatbot, onRec
         variant="outline" 
         className="w-full"
         size="lg"
+        onClick={() => setShowAddExpense(true)}
       >
         <Plus className="w-4 h-4 mr-2" />
         {getText('नया खर्च जोड़ें', 'Add New Expense')}
       </Button>
+
+      {/* Add Expense Modal */}
+      <AddExpenseModal
+        isOpen={showAddExpense}
+        onClose={() => setShowAddExpense(false)}
+        onExpenseAdded={handleExpenseAdded}
+        language={language}
+      />
     </div>
   );
 };

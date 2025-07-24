@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,8 @@ import {
   Volume2, 
   ArrowLeft,
   Bot,
-  User
+  User,
+  MicOff
 } from "lucide-react";
 
 interface ChatBotProps {
@@ -26,18 +27,23 @@ interface Message {
 }
 
 export const ChatBot = ({ language, onBack }: ChatBotProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Initialize with welcome message
+  useEffect(() => {
+    const welcomeMessage: Message = {
       id: '1',
       text: language === 'hi' 
         ? 'नमस्ते! मैं आपका वित्तीय सहायक हूँ। मैं आपकी पैसों की समस्याओं में मदद कर सकता हूँ।'
         : 'Hello! I am your financial assistant. I can help you with your money-related questions.',
       sender: 'bot',
       timestamp: new Date()
-    }
-  ]);
-  const [inputText, setInputText] = useState("");
-  const [isListening, setIsListening] = useState(false);
+    };
+    setMessages([welcomeMessage]);
+  }, [language]);
 
   const getText = (hindi: string, english: string) => {
     return language === 'hi' ? hindi : english;
@@ -90,6 +96,9 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
+      
+      // Speak the response
+      speakResponse(botResponse);
     }, 1000);
   };
 
@@ -125,17 +134,70 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
 
   const handleVoiceInput = () => {
     setIsListening(true);
-    // Simulate voice recognition
-    setTimeout(() => {
-      const voiceTexts = [
-        getText('मुझे पैसे बचाने के तरीके बताएं', 'Tell me ways to save money'),
-        getText('निवेश कैसे करें?', 'How to invest?'),
-        getText('इमरजेंसी फंड कितना रखना चाहिए?', 'How much emergency fund should I keep?')
-      ];
-      const randomText = voiceTexts[Math.floor(Math.random() * voiceTexts.length)];
-      setInputText(randomText);
-      setIsListening(false);
-    }, 2000);
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsListening(false);
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+        // Fallback to sample data on error
+        const voiceTexts = [
+          getText('मुझे पैसे बचाने के तरीके बताएं', 'Tell me ways to save money'),
+          getText('निवेश कैसे करें?', 'How to invest?'),
+          getText('इमरजेंसी फंड कितना रखना चाहिए?', 'How much emergency fund should I keep?')
+        ];
+        const randomText = voiceTexts[Math.floor(Math.random() * voiceTexts.length)];
+        setInputText(randomText);
+      };
+      
+      recognition.start();
+    } else {
+      // Fallback for browsers without speech recognition
+      setTimeout(() => {
+        const voiceTexts = [
+          getText('मुझे पैसे बचाने के तरीके बताएं', 'Tell me ways to save money'),
+          getText('निवेश कैसे करें?', 'How to invest?'),
+          getText('इमरजेंसी फंड कितना रखना चाहिए?', 'How much emergency fund should I keep?')
+        ];
+        const randomText = voiceTexts[Math.floor(Math.random() * voiceTexts.length)];
+        setInputText(randomText);
+        setIsListening(false);
+      }, 2000);
+    }
+  };
+
+  const speakResponse = (text: string) => {
+    setIsSpeaking(true);
+    
+    // Check if browser supports speech synthesis
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      utterance.rate = 0.8;
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
+      
+      speechSynthesis.speak(utterance);
+    } else {
+      // Fallback - just simulate speaking
+      setTimeout(() => {
+        setIsSpeaking(false);
+      }, 3000);
+    }
   };
 
   return (
@@ -227,13 +289,13 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
                 className="flex-1"
               />
               <Button
-                variant="voice"
+                variant={isListening ? "destructive" : "voice"}
                 size="icon"
-                onClick={handleVoiceInput}
-                disabled={isListening}
+                onClick={isListening ? () => setIsListening(false) : handleVoiceInput}
+                disabled={isSpeaking}
                 className={isListening ? 'animate-pulse' : ''}
               >
-                <Mic className="w-4 h-4" />
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </Button>
             </div>
             <Button 
@@ -248,6 +310,15 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
             <p className="text-sm text-warning text-center mt-2 animate-pulse">
               {getText('सुन रहे हैं...', 'Listening...')}
             </p>
+          )}
+          
+          {isSpeaking && (
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+              <p className="text-sm text-primary animate-pulse">
+                {getText('बोल रहे हैं...', 'Speaking...')}
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>

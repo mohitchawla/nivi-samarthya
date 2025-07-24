@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Mic, 
   MicOff, 
   Volume2, 
   ArrowLeft, 
   Check,
-  RefreshCw 
+  RefreshCw,
+  Edit
 } from "lucide-react";
 
 interface VoiceInputProps {
@@ -18,11 +20,17 @@ interface VoiceInputProps {
   onExpenseAdded: (expense: any) => void;
 }
 
+const categories = ['Rent', 'Groceries', 'Bills', 'Medical', 'Transport', 'Miscellaneous'];
+
 export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps) => {
   const [isListening, setIsListening] = useState(false);
   const [transcriptText, setTranscriptText] = useState("");
   const [parsedExpense, setParsedExpense] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editAmount, setEditAmount] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   const getText = (hindi: string, english: string) => {
     return language === 'hi' ? hindi : english;
@@ -30,51 +38,131 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
 
   const startListening = () => {
     setIsListening(true);
-    // Simulate voice recognition
-    setTimeout(() => {
-      const sampleTexts = [
-        "आज 200 रुपये सब्जी में खर्च किया",
-        "Today spent 150 rupees on groceries",
-        "50 रुपये चाय में खर्च",
-        "Paid 300 for mobile recharge"
-      ];
-      const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
-      setTranscriptText(randomText);
-      setIsListening(false);
-      parseExpense(randomText);
-    }, 3000);
+    
+    // Check if browser supports speech recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setTranscriptText(transcript);
+        setIsListening(false);
+        parseExpense(transcript);
+      };
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+        // Fallback to sample data on error
+        const sampleTexts = [
+          "आज 200 रुपये किराना में खर्च किया",
+          "Today spent 150 rupees on groceries",
+          "300 rupees medical expense",
+          "Paid 500 for transport"
+        ];
+        const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+        setTranscriptText(randomText);
+        parseExpense(randomText);
+      };
+      
+      recognition.start();
+    } else {
+      // Fallback for browsers without speech recognition
+      setTimeout(() => {
+        const sampleTexts = [
+          "आज 200 रुपये किराना में खर्च किया",
+          "Today spent 150 rupees on groceries", 
+          "300 rupees medical expense",
+          "Paid 500 for transport"
+        ];
+        const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+        setTranscriptText(randomText);
+        setIsListening(false);
+        parseExpense(randomText);
+      }, 3000);
+    }
   };
 
   const parseExpense = (text: string) => {
     setIsProcessing(true);
-    // Simulate AI parsing
+    // Enhanced AI parsing logic
     setTimeout(() => {
       const amount = text.match(/\d+/)?.[0] || "0";
-      const categories = ['Essentials', 'Bills', 'Discretionary', 'Miscellaneous'];
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
       
-      setParsedExpense({
+      // Smart category detection based on keywords
+      let detectedCategory = 'Miscellaneous';
+      const lowerText = text.toLowerCase();
+      
+      if (lowerText.includes('किराना') || lowerText.includes('groceries') || lowerText.includes('सब्जी') || lowerText.includes('vegetable')) {
+        detectedCategory = 'Groceries';
+      } else if (lowerText.includes('किराया') || lowerText.includes('rent')) {
+        detectedCategory = 'Rent';
+      } else if (lowerText.includes('बिल') || lowerText.includes('bill') || lowerText.includes('electricity') || lowerText.includes('mobile')) {
+        detectedCategory = 'Bills';
+      } else if (lowerText.includes('medical') || lowerText.includes('चिकित्सा') || lowerText.includes('दवा') || lowerText.includes('doctor')) {
+        detectedCategory = 'Medical';
+      } else if (lowerText.includes('transport') || lowerText.includes('यातायात') || lowerText.includes('bus') || lowerText.includes('taxi') || lowerText.includes('auto')) {
+        detectedCategory = 'Transport';
+      }
+      
+      const expense = {
         amount: parseInt(amount),
-        category: randomCategory,
+        category: detectedCategory,
         description: text,
         date: new Date().toLocaleDateString('en-IN')
-      });
+      };
+      
+      setParsedExpense(expense);
+      setEditAmount(amount);
+      setEditCategory(detectedCategory);
+      setEditDescription(text);
       setIsProcessing(false);
     }, 2000);
   };
 
   const confirmExpense = () => {
-    if (parsedExpense) {
-      onExpenseAdded(parsedExpense);
+    const expenseToAdd = isEditing ? {
+      amount: parseInt(editAmount),
+      category: editCategory,
+      description: editDescription,
+      date: new Date().toLocaleDateString('en-IN')
+    } : parsedExpense;
+    
+    if (expenseToAdd) {
+      onExpenseAdded(expenseToAdd);
       // Reset state
       setTranscriptText("");
       setParsedExpense(null);
+      setIsEditing(false);
+      setEditAmount("");
+      setEditCategory("");
+      setEditDescription("");
     }
+  };
+
+  const getCategoryText = (cat: string) => {
+    const categoryMap: Record<string, string> = {
+      'Rent': 'किराया',
+      'Groceries': 'किराना',
+      'Bills': 'बिल',
+      'Medical': 'चिकित्सा',
+      'Transport': 'यातायात',
+      'Miscellaneous': 'विविध'
+    };
+    return language === 'hi' ? categoryMap[cat] : cat;
   };
 
   const retryListening = () => {
     setTranscriptText("");
     setParsedExpense(null);
+    setIsEditing(false);
+    setEditAmount("");
+    setEditCategory("");
+    setEditDescription("");
     startListening();
   };
 
@@ -158,12 +246,22 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
           )}
 
           {/* Parsed Expense Display */}
-          {parsedExpense && (
+          {parsedExpense && !isEditing && (
             <Card className="bg-success-light border-success/20">
               <CardContent className="p-4 space-y-3">
-                <h3 className="font-semibold text-success">
-                  {getText('खर्च की जानकारी', 'Expense Details')}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-success">
+                    {getText('खर्च की जानकारी', 'Expense Details')}
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    {getText('संपादित करें', 'Edit')}
+                  </Button>
+                </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -173,14 +271,7 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                   
                   <div className="flex justify-between">
                     <Label>{getText('श्रेणी', 'Category')}:</Label>
-                    <span className="font-medium">
-                      {getText(
-                        parsedExpense.category === 'Essentials' ? 'जरूरी सामान' :
-                        parsedExpense.category === 'Bills' ? 'बिल' :
-                        parsedExpense.category === 'Discretionary' ? 'विकल्प' : 'विविध',
-                        parsedExpense.category
-                      )}
-                    </span>
+                    <span className="font-medium">{getCategoryText(parsedExpense.category)}</span>
                   </div>
                   
                   <div className="flex justify-between">
@@ -206,6 +297,74 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     {getText('दोबारा', 'Retry')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit Expense Form */}
+          {isEditing && (
+            <Card className="bg-warning-light border-warning/20">
+              <CardContent className="p-4 space-y-4">
+                <h3 className="font-semibold text-warning">
+                  {getText('खर्च संपादित करें', 'Edit Expense')}
+                </h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label>{getText('राशि', 'Amount')} (₹)</Label>
+                    <Input
+                      type="number"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                      placeholder={getText('राशि दर्ज करें', 'Enter amount')}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>{getText('श्रेणी', 'Category')}</Label>
+                    <Select value={editCategory} onValueChange={setEditCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={getText('श्रेणी चुनें', 'Select category')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {getCategoryText(cat)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label>{getText('विवरण', 'Description')}</Label>
+                    <Input
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder={getText('विवरण दर्ज करें', 'Enter description')}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    variant="success" 
+                    onClick={confirmExpense}
+                    className="flex-1"
+                    disabled={!editAmount || !editCategory}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    {getText('सेव करें', 'Save')}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditing(false)}
+                    className="flex-1"
+                  >
+                    {getText('रद्द करें', 'Cancel')}
                   </Button>
                 </div>
               </CardContent>
