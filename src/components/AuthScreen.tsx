@@ -22,25 +22,27 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
   };
 
   const handleOtpSubmit = () => {
-    onAuth(phone, income);
-    fetch('http://localhost:9090/user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ phoneNumber: phone, income: income })
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        sessionStorage.setItem('userno', phone);
-        return response.json();
+    if(otp === phone.substring(4)){
+      onAuth(phone, income);
+      fetch('http://localhost:9090/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phoneNumber: phone, income: income })
       })
-      .then(data => {
-        console.log('Success:', data);
-        // Handle successful response
-      });
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          sessionStorage.setItem('userno', phone);
+          return response.json();
+        })
+        .then(data => {
+          console.log('Success:', data);
+          // Handle successful response
+        });
+    }
   };
 
   const handleIncomeSubmit = () => {

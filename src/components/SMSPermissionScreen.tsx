@@ -15,9 +15,11 @@ export const SMSPermissionScreen = ({ onAllow, onDeny }: SMSPermissionScreenProp
           <div className="mx-auto w-16 h-16 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center mb-4">
             <MessageSquare className="w-8 h-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-xl font-semibold">SMS Permission Required</CardTitle>
+          <CardTitle className="text-xl font-semibold">SMS Permission Required - मैसेज की अनुमति</CardTitle>
           <p className="text-muted-foreground mt-2">
             We need access to your SMS messages to automatically track your expenses from bank and UPI notifications.
+            <br/>
+            बैंक और यूपीआई सूचनाओं से आपके खर्चों को स्वचालित रूप से ट्रैक करने के लिए हमें आपके एसएमएस संदेशों तक पहुंच की आवश्यकता है।
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -42,7 +44,7 @@ export const SMSPermissionScreen = ({ onAllow, onDeny }: SMSPermissionScreenProp
               className="w-full"
               size="lg"
             >
-              Allow SMS Access
+              Allow Access - अनुमति दे
             </Button>
             
             <Button 
@@ -50,7 +52,7 @@ export const SMSPermissionScreen = ({ onAllow, onDeny }: SMSPermissionScreenProp
               onClick={onDeny}
               className="w-full"
             >
-              Deny (Manual entry only)
+              Deny - अस्वीकार करे
             </Button>
           </div>
         </CardContent>

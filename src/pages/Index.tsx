@@ -34,7 +34,6 @@ const Index = () => {
   const handleSMSPermission = (granted: boolean) => {
     setSmsPermissionGranted(granted);
     setCurrentState('dashboard');
-    console.log('selectedLanguage', selectedLanguage);
     toast({
       title: selectedLanguage === 'hi' ? "स्वागत है!" : "Welcome!",
       description: selectedLanguage === 'hi' ? "Nivi में आपका स्वागत है" : "Welcome to Nivi",

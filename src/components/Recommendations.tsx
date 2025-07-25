@@ -30,7 +30,8 @@ export const Recommendations = ({ language, onBack, userIncome }: Recommendation
       amount: '₹500/month',
       returns: '7.1% annually',
       risk: 'Low',
-      icon: <Shield className="w-5 h-5 text-success" />
+      icon: <Shield className="w-5 h-5 text-success" />,
+      link: 'https://www.policybazaar.com/hi-in/income-tax/ppf-account-in-hindi/'
     },
     {
       title: getText('SIP म्यूचुअल फंड', 'SIP Mutual Funds'),
@@ -155,7 +156,7 @@ export const Recommendations = ({ language, onBack, userIncome }: Recommendation
                     <span className="text-muted-foreground"> • {investment.returns}</span>
                   </div>
                   <Button size="sm" variant="outline">
-                    <ExternalLink className="w-3 h-3 mr-1" />
+                    <ExternalLink href={investment.link} className="w-3 h-3 mr-1" />
                     {getText('जानें', 'Learn')}
                   </Button>
                 </div>
