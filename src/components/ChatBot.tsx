@@ -3,11 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  MessageCircle, 
-  Send, 
-  Mic, 
-  Volume2, 
+import {
+  MessageCircle,
+  Send,
+  Mic,
+  Volume2,
   ArrowLeft,
   Bot,
   User,
@@ -36,7 +36,7 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
   useEffect(() => {
     const welcomeMessage: Message = {
       id: '1',
-      text: language === 'hi' 
+      text: language === 'hi'
         ? 'नमस्ते! मैं आपका वित्तीय सहायक हूँ। मैं आपकी पैसों की समस्याओं में मदद कर सकता हूँ।'
         : 'Hello! I am your financial assistant. I can help you with your money-related questions.',
       sender: 'bot',
@@ -88,68 +88,55 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
 
     // Simulate bot response
     setTimeout(() => {
-      const botResponse = generateBotResponse(text);
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botResponse,
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botMessage]);
-      
-      // Speak the response
-      speakResponse(botResponse);
+      generateBotResponse(text);
     }, 1000);
   };
 
   const generateBotResponse = (userText: string) => {
-    const lowerText = userText.toLowerCase();
-    
-    if (lowerText.includes('save') || lowerText.includes('बचत')) {
-      return getText(
-        'बचत के लिए 50-30-20 रूल फॉलो करें: 50% जरूरी चीजों पर, 30% चाहतों पर, 20% बचत पर खर्च करें।',
-        'Follow the 50-30-20 rule for savings: 50% on needs, 30% on wants, 20% on savings.'
-      );
-    }
-    
-    if (lowerText.includes('invest') || lowerText.includes('निवेश')) {
-      return getText(
-        'शुरुआत में SIP mutual funds अच्छे हैं। ₹500 से शुरू करके धीरे-धीरे बढ़ाएं।',
-        'SIP mutual funds are good for beginners. Start with ₹500 and gradually increase.'
-      );
-    }
-    
-    if (lowerText.includes('emergency') || lowerText.includes('इमरजेंसी')) {
-      return getText(
-        'इमरजेंसी फंड बैंक सेविंग्स अकाउंट में रखें जहाँ आसानी से पैसे निकाल सकें।',
-        'Keep emergency fund in bank savings account where you can easily withdraw money.'
-      );
-    }
+    fetch('http://localhost:9090/answer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ question: userText })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        response.text().then(resp => {
+          const botMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: resp,
+            sender: 'bot',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, botMessage]);
 
-    return getText(
-      'मैं आपकी मदद करना चाहता हूँ। कृपया अपना सवाल और स्पष्ट रूप से पूछें।',
-      'I want to help you. Please ask your question more clearly.'
-    );
+          // Speak the response
+          speakResponse(resp)
+        });
+      })
   };
 
   const handleVoiceInput = () => {
     setIsListening(true);
-    
+
     // Check if browser supports speech recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       const recognition = new SpeechRecognition();
-      
+
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-      
+
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInputText(transcript);
         setIsListening(false);
       };
-      
+
       recognition.onerror = () => {
         setIsListening(false);
         // Fallback to sample data on error
@@ -161,7 +148,7 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
         const randomText = voiceTexts[Math.floor(Math.random() * voiceTexts.length)];
         setInputText(randomText);
       };
-      
+
       recognition.start();
     } else {
       // Fallback for browsers without speech recognition
@@ -180,17 +167,17 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
 
   const speakResponse = (text: string) => {
     setIsSpeaking(true);
-    
+
     // Check if browser supports speech synthesis
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
       utterance.rate = 0.8;
-      
+
       utterance.onend = () => {
         setIsSpeaking(false);
       };
-      
+
       speechSynthesis.speak(utterance);
     } else {
       // Fallback - just simulate speaking
@@ -247,19 +234,18 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
                       <Bot className="w-4 h-4 text-primary-foreground" />
                     </div>
                   )}
-                  
+
                   <div
-                    className={`max-w-[70%] p-3 rounded-lg ${
-                      message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground ml-auto'
-                        : 'bg-muted'
-                    }`}
+                    className={`max-w-[70%] p-3 rounded-lg ${message.sender === 'user'
+                      ? 'bg-primary text-primary-foreground ml-auto'
+                      : 'bg-muted'
+                      }`}
                   >
                     <p className="text-sm">{message.text}</p>
                     <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString('en-IN', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                      {message.timestamp.toLocaleTimeString('en-IN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
                     </p>
                   </div>
@@ -298,20 +284,20 @@ export const ChatBot = ({ language, onBack }: ChatBotProps) => {
                 {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </Button>
             </div>
-            <Button 
+            <Button
               onClick={() => sendMessage(inputText)}
               disabled={!inputText.trim()}
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          
+
           {isListening && (
             <p className="text-sm text-warning text-center mt-2 animate-pulse">
               {getText('सुन रहे हैं...', 'Listening...')}
             </p>
           )}
-          
+
           {isSpeaking && (
             <div className="flex items-center justify-center gap-2 mt-2">
               <Volume2 className="w-4 h-4 text-primary animate-pulse" />
