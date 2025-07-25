@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Smartphone, Shield, ArrowRight } from "lucide-react";
+import { BadgeIndianRupee , Shield, ArrowRight, KeyRound } from "lucide-react";
 
 interface AuthScreenProps {
   onAuth: (phone: string, income: string) => void;
@@ -50,10 +50,18 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
     <>
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-gradient-to-r from-primary to-primary-glow rounded-full flex items-center justify-center mb-4">
-          <Smartphone className="w-8 h-8 text-primary-foreground" />
+          <BadgeIndianRupee className="w-8 h-8 text-primary-foreground" />
         </div>
-        <CardTitle className="text-2xl font-bold">नमस्ते! Nivi में आपका स्वागत है</CardTitle>
-        <CardDescription>अपना मोबाइल नंबर डालें</CardDescription>
+        <CardTitle className="text-2xl font-bold">
+          नमस्ते! Nivi में आपका स्वागत है
+          <br/>
+          Welcome to Nivi!
+        </CardTitle>
+        <CardDescription>
+          अपना मोबाइल नंबर डालें
+          <br/>
+          Please enter your mobile number
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -78,7 +86,9 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
           className="w-full"
           size="lg"
         >
-          OTP भेजें <ArrowRight className="w-4 h-4 ml-2" />
+          OTP भेजें
+          <br/>
+          Send OTP <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </CardContent>
     </>
@@ -88,14 +98,14 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
     <>
       <CardHeader className="text-center">
         <div className="mx-auto w-16 h-16 bg-gradient-to-r from-success to-success/80 rounded-full flex items-center justify-center mb-4">
-          <Shield className="w-8 h-8 text-success-foreground" />
+          <KeyRound className="w-8 h-8 text-success-foreground" />
         </div>
         <CardTitle className="text-xl font-bold">OTP वेरिफिकेशन</CardTitle>
         <CardDescription>+91 {phone} पर भेजा गया OTP डालें</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="otp">6 अंकों का OTP</Label>
+          <Label htmlFor="otp">6 अंकों का OTP - 6-digits OTP</Label>
           <Input
             id="otp"
             type="text"
@@ -111,14 +121,14 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
           className="w-full"
           size="lg"
         >
-          वेरिफाई करें <ArrowRight className="w-4 h-4 ml-2" />
+          वेरिफाई करें - Verify OTP <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
         <Button
           variant="ghost"
           onClick={() => setStep('phone')}
           className="w-full"
         >
-          नंबर बदलें
+          नंबर बदलें - Change Mobile Number
         </Button>
       </CardContent>
     </>
