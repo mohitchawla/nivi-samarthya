@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -39,10 +39,13 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
     categories: []
   });
 
+  useEffect(() => {
+    getFinancialData();
+  }, [timeFilter]); // Run only once on mount
   // Sample data - in real app this would come from backend
   const getFinancialData = () => {
 
-    fetch('http://localhost:9090/expense/' + sessionStorage.getItem("userno"), {
+    fetch('http://localhost:9090/expense/' + sessionStorage.getItem("userno") +'/'+timeFilter, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -61,7 +64,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
                 savings: data.savings,
                 categories: data.expenseResponses.map(cat => ({
                   ...cat,
-                  amount: Math.round(cat.amount / 30)
+                  amount: cat.amount
                 }))
               }
             )
@@ -73,7 +76,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
                 savings: data.savings,
                 categories: data.expenseResponses.map(cat => ({
                   ...cat,
-                  amount: Math.round(cat.amount / 4)
+                  amount: cat.amount
                 }))
               }
             )
@@ -85,7 +88,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
                 savings: data.savings,
                 categories: data.expenseResponses.map(cat => ({
                   ...cat,
-                  amount: Math.round(cat.amount / 1)
+                  amount: cat.amount
                 }))
               }
             )
@@ -93,8 +96,6 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
         });
       })
   };
-
-  getFinancialData();
 
   // Calculate user rating based on expense reduction
   const calculateRating = () => {
@@ -156,6 +157,7 @@ export const Dashboard = ({ language, onVoiceInput, onChatbot, onRecommendations
   const handleExpenseAdded = (expense: any) => {
     onExpenseAdded(expense);
     setShowAddExpense(false);
+    getFinancialData();
   };
 
   return (

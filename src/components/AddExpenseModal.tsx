@@ -51,8 +51,6 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
       phoneNumber: sessionStorage.getItem('userno')
     };
 
-    onExpenseAdded(expense);
-
     fetch('http://localhost:9090/expense', {
       method: 'POST',
       headers: {
@@ -64,6 +62,7 @@ export const AddExpenseModal = ({ isOpen, onClose, onExpenseAdded, language }: A
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        onExpenseAdded(expense);
         return response.json();
       })
 

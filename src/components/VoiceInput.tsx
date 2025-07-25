@@ -117,20 +117,6 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
         phoneNumber: sessionStorage.getItem("userno")
       };
 
-      fetch('http://localhost:9090/expense', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(expense)
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-
       setParsedExpense(expense);
       setEditAmount(amount);
       setEditCategory(detectedCategory);
@@ -144,11 +130,25 @@ export const VoiceInput = ({ language, onBack, onExpenseAdded }: VoiceInputProps
       amount: parseInt(editAmount),
       category: editCategory,
       description: editDescription,
-      date: new Date().toLocaleDateString('en-IN')
+      date: new Date().toLocaleDateString('en-IN'),
+      phoneNumber: sessionStorage.getItem("userno")
     } : parsedExpense;
 
     if (expenseToAdd) {
-      onExpenseAdded(expenseToAdd);
+      fetch('http://localhost:9090/expense', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expenseToAdd)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        onExpenseAdded(expenseToAdd);
+        return response.json();
+      })
       // Reset state
       setTranscriptText("");
       setParsedExpense(null);

@@ -14,6 +14,7 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
   const [income, setIncome] = useState("");
   const [step, setStep] = useState<'phone' | 'income' | 'otp'>('phone');
   const [otp, setOtp] = useState("");
+  const [invalidOtp, setInvalidOtp] = useState(false);
 
   const handlePhoneSubmit = () => {
     if (phone.length === 10) {
@@ -42,6 +43,9 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
           console.log('Success:', data);
           // Handle successful response
         });
+    }
+    else{
+      setInvalidOtp(true);
     }
   };
 
@@ -95,6 +99,11 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
       </CardContent>
     </>
   );
+  
+  const resendOtp = () => {
+    setInvalidOtp(false);
+    setOtp('');
+  }
 
   const renderOtpStep = () => (
     <>
@@ -116,6 +125,13 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
             className="text-center text-lg tracking-widest"
           />
+          
+        {invalidOtp ? 
+          <span className="inline-flex items-center px-3 border border-r-0 border-input bg-muted rounded-l-lg text-sm color-red">
+            Invalid OTP!! <a onClick={resendOtp}> click here to resend</a>
+          </span>
+          : ''
+        }
         </div>
         <Button
           onClick={handleOtpSubmit}
