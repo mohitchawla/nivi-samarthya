@@ -22,10 +22,6 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
   };
 
   const handleOtpSubmit = () => {
-    setStep('income');
-  };
-
-  const handleIncomeSubmit = () => {
     onAuth(phone, income);
     fetch('http://localhost:9090/user', {
       method: 'POST',
@@ -45,6 +41,9 @@ export const AuthScreen = ({ onAuth }: AuthScreenProps) => {
         console.log('Success:', data);
         // Handle successful response
       });
+  };
+
+  const handleIncomeSubmit = () => {
   };
 
   const renderPhoneStep = () => (
