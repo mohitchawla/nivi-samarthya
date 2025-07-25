@@ -52,13 +52,13 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary-glow to-secondary flex flex-col items-center justify-center p-4 text-center">
       <div className="max-w-md mx-auto space-y-6">
         {/* Hero Image */}
-        <div className="w-48 h-28 mx-auto mb-6 rounded-xl overflow-hidden shadow-2xl">
+        {/*<div className="w-48 h-28 mx-auto mb-6 rounded-xl overflow-hidden shadow-2xl">
           <img 
             src={heroImage} 
             alt="Nivi Financial App" 
             className="w-full h-full object-cover"
           />
-        </div>
+        </div>*/}
 
         {/* App Title */}
         <div className="space-y-2">
